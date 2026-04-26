@@ -20,7 +20,9 @@ export default function AuthCallback() {
     localStorage.setItem('hospitalId',   hospitalId   || '');
     localStorage.setItem('hospitalName', hospitalName || '');
 
-    navigate('/dashboard', { replace: true });
+    if (role === 'SUPER_ADMIN') navigate('/superadmin', { replace: true });
+    else if (role === 'HOSPITAL_ADMIN') navigate('/dashboard', { replace: true });
+    else navigate('/hospitals', { replace: true });
   }, []);
 
   return (

@@ -48,7 +48,7 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
                 .map(Hospital::getName).orElse("");
         }
 
-        String redirectUrl = "http://localhost:3000/auth/callback"
+        String redirectUrl = "https://medireach-vert.vercel.app/auth/callback"
             + "?token="        + URLEncoder.encode(token, StandardCharsets.UTF_8)
             + "&email="        + URLEncoder.encode(email != null ? email : "", StandardCharsets.UTF_8)
             + "&role="         + URLEncoder.encode(user.getRole(), StandardCharsets.UTF_8)

@@ -1,20 +1,12 @@
+# Copy this file to application.yml and fill in your values
 spring:
   datasource:
-    url: YOUR_DB_URL
-    username: YOUR_DB_USERNAME
+    url: jdbc:mysql://localhost:3306/medireach_db
+    username: root
     password: YOUR_DB_PASSWORD
-  security:
-    oauth2:
-      client:
-        registration:
-          google:
-            client-id: YOUR_GOOGLE_CLIENT_ID
-            client-secret: YOUR_GOOGLE_CLIENT_SECRET
-
 gemini:
   api:
     key: YOUR_GEMINI_API_KEY
-
 razorpay:
   key-id: YOUR_RAZORPAY_KEY_ID
   key-secret: YOUR_RAZORPAY_KEY_SECRET

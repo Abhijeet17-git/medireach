@@ -1,0 +1,9 @@
+target/
+*.class
+*.jar
+.env
+src/main/resources/application.yml
+.idea/
+*.iml
+frontend/node_modules/
+frontend/build/

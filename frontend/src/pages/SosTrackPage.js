@@ -5,7 +5,7 @@ import axios from 'axios';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
-const API = 'http://localhost:8080';
+const API = 'https://medireach-production-9d50.up.railway.app';
 
 export default function SosTrackPage() {
   const nav = useNavigate();

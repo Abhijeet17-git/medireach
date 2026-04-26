@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import axios from 'axios';
-const API = 'http://localhost:8080';
+const API = 'https://medireach-production-9d50.up.railway.app';
 
 export default function Login() {
   const [form, setForm] = useState({ email: '', password: '' });

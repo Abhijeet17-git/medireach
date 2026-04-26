@@ -4,7 +4,7 @@ import axios from 'axios';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
-const API = 'http://localhost:8080';
+const API = 'https://medireach-production-9d50.up.railway.app';
 
 const AMBULANCE_TYPES = [
   { id: 'basic',    label: 'Basic Life Support',   desc: 'Oxygen, first aid, stretcher',        cost: '₹500–800',   color: '#1565C0', bg: '#E3F2FD', icon: '🚑' },
@@ -134,7 +134,7 @@ export default function SosPage() {
       const data = JSON.parse(saved);
       const interval = setInterval(async () => {
         try {
-          const res = await fetch(`http://localhost:8080/api/sos/status/${data.id}`);
+          const res = await fetch(`https://medireach-production-9d50.up.railway.app/api/sos/status/${data.id}`);
           const s = await res.json();
           setLiveStatus(s.status);
           localStorage.setItem('myPhone', form.patientPhone); localStorage.setItem('activeSos', JSON.stringify({ ...data, status: s.status }));
@@ -329,7 +329,7 @@ export default function SosPage() {
                 if (paymentChoice === 'razorpay') {
                   try {
                     const amount = selectedAmb?.id === 'air' ? 5000 : selectedAmb?.id === 'advanced' ? 1500 : 600;
-                    const orderRes = await fetch('http://localhost:8080/api/payment/create-order', {
+                    const orderRes = await fetch('https://medireach-production-9d50.up.railway.app/api/payment/create-order', {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
                       body: JSON.stringify({ sosId: 0, amount, patientEmail: localStorage.getItem('email') || '' })
@@ -343,7 +343,7 @@ export default function SosPage() {
                       description: 'Ambulance Booking',
                       order_id: order.orderId,
                       handler: async (response) => {
-                        await fetch('http://localhost:8080/api/payment/verify', {
+                        await fetch('https://medireach-production-9d50.up.railway.app/api/payment/verify', {
                           method: 'POST',
                           headers: { 'Content-Type': 'application/json' },
                           body: JSON.stringify(response)

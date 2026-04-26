@@ -5,7 +5,7 @@ import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import axios from 'axios';
 
-const API = 'http://localhost:8080';
+const API = 'https://medireach-production-9d50.up.railway.app';
 const STEPS = ['Hospital Info', 'Location & Beds', 'Admin Account', 'Verification Docs'];
 const SPEC_TAGS = ['Cardiac','Orthopaedic','Maternity','Neurology','Paediatrics','Oncology','Burns','Trauma','Nephrology','Psychiatry','Dermatology','ENT','Ophthalmology','Dental','Gastroenterology'];
 

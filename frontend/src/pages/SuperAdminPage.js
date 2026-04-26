@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-const API = 'http://localhost:8080';
+const API = 'https://medireach-production-9d50.up.railway.app';
 
 export default function SuperAdminPage() {
   const [hospitals, setHospitals] = useState([]);

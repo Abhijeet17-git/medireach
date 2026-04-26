@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Bed, Clock, LogOut, RefreshCw, Save, AlertCircle, CheckCircle, Building2, Zap } from 'lucide-react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-const API = 'http://localhost:8080';
+const API = 'https://medireach-production-9d50.up.railway.app';
 
 export default function Dashboard() {
   const [hospital, setHospital] = useState(null);
@@ -69,7 +69,7 @@ export default function Dashboard() {
     if (!hospitalId) return;
     const fetchSos = async () => {
       try {
-        const res = await fetch(`http://localhost:8080/api/sos/hospital/${hospitalId}`);
+        const res = await fetch(`https://medireach-production-9d50.up.railway.app/api/sos/hospital/${hospitalId}`);
         if (res.ok) {
           const data = await res.json();
           setSosAlerts(data);
@@ -211,19 +211,19 @@ export default function Dashboard() {
                         <span style={{ padding: '4px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700, background: s.status === 'HOSPITAL_NOTIFIED' ? 'var(--red-lt)' : s.status === 'EN_ROUTE' ? '#FFF8E1' : '#E8F5E9', color: s.status === 'HOSPITAL_NOTIFIED' ? 'var(--red)' : s.status === 'EN_ROUTE' ? '#F9A825' : '#2E7D32' }}>{s.status}</span>
                         {s.status === 'HOSPITAL_NOTIFIED' && (
                           <button className="btn btn-blue btn-sm" style={{ fontSize: 11, padding: '4px 12px' }} onClick={async () => {
-                            await fetch(`http://localhost:8080/api/sos/status/${s.id}?status=EN_ROUTE`, { method: 'PUT' });
+                            await fetch(`https://medireach-production-9d50.up.railway.app/api/sos/status/${s.id}?status=EN_ROUTE`, { method: 'PUT' });
                             setSosAlerts(prev => prev.map(a => a.id === s.id ? { ...a, status: 'EN_ROUTE' } : a));
                           }}>🚑 Accept</button>
                         )}
                         {s.status === 'EN_ROUTE' && (
                           <button className="btn btn-sm" style={{ fontSize: 11, padding: '4px 12px', background: 'var(--green)', color: 'white' }} onClick={async () => {
-                            await fetch(`http://localhost:8080/api/sos/status/${s.id}?status=ARRIVED`, { method: 'PUT' });
+                            await fetch(`https://medireach-production-9d50.up.railway.app/api/sos/status/${s.id}?status=ARRIVED`, { method: 'PUT' });
                             setSosAlerts(prev => prev.map(a => a.id === s.id ? { ...a, status: 'ARRIVED' } : a));
                           }}>✅ Mark Arrived</button>
                         )}
                         {(s.status === 'HOSPITAL_NOTIFIED' || s.status === 'EN_ROUTE') && (
                           <button className="btn btn-sm" style={{ fontSize: 11, padding: '4px 12px', background: 'var(--red-lt)', color: 'var(--red)', border: '1px solid var(--red)' }} onClick={async () => {
-                            await fetch(`http://localhost:8080/api/sos/status/${s.id}?status=CANCELLED`, { method: 'PUT' });
+                            await fetch(`https://medireach-production-9d50.up.railway.app/api/sos/status/${s.id}?status=CANCELLED`, { method: 'PUT' });
                             setSosAlerts(prev => prev.filter(a => a.id !== s.id));
                           }}>✕ Cancel</button>
                         )}

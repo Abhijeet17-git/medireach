@@ -3,7 +3,7 @@ import { MapPin, Clock, Search, RefreshCw, AlertCircle, X, Navigation } from 'lu
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import axios from 'axios';
-const API = 'http://localhost:8080';
+const API = 'https://medireach-production-9d50.up.railway.app';
 
 const AMBULANCE_TYPES = [
   { id: 'basic',    label: 'Basic Life Support',    desc: 'Oxygen, first aid',           cost: '₹500–800',   color: '#1565C0', bg: '#E3F2FD', icon: '🚑' },
@@ -305,7 +305,7 @@ export default function HospitalFinder() {
                   setReviewSubmitting(true);
                   try {
                     const email = localStorage.getItem('email') || 'anonymous@medireach.com';
-                    const res = await fetch('http://localhost:8080/api/reviews', {
+                    const res = await fetch('https://medireach-production-9d50.up.railway.app/api/reviews', {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
                       body: JSON.stringify({ hospitalId: reviewModal.hospitalId, userEmail: email, rating: reviewForm.rating, comment: reviewForm.comment })

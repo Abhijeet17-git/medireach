@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Clock, MapPin, Phone } from 'lucide-react';
 
-const API = 'http://localhost:8080';
+const API = 'https://medireach-production-9d50.up.railway.app';
 
 const STATUS_CONFIG = {
   HOSPITAL_NOTIFIED: { bg: '#E3F2FD', border: '#1565C0', color: '#1565C0', icon: '🏥', label: 'Hospital Notified' },

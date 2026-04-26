@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Send, AlertTriangle, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
-const API = 'http://localhost:8080';
+const API = 'https://medireach-production-9d50.up.railway.app';
 
 const URGENCY = {
   ICU_IMMEDIATELY: { label: 'Go to ICU Immediately', color: 'var(--red)',   bg: 'var(--red-lt)',   border: 'rgba(198,40,40,0.2)',   icon: '🚨' },

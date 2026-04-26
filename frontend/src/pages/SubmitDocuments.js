@@ -14,7 +14,7 @@ export default function SubmitDocuments() {
       return;
     }
     try {
-      await fetch(`http://localhost:8080/api/hospitals/${hospitalId}/drive-link`, {
+      await fetch(`https://medireach-production-9d50.up.railway.app/api/hospitals/${hospitalId}/drive-link`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ driveLink })

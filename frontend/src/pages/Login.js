@@ -21,7 +21,7 @@ export default function Login() {
       if (data.role === 'SUPER_ADMIN') nav('/superadmin', { replace: true });
       else if (data.role === 'HOSPITAL_ADMIN') nav('/dashboard', { replace: true });
       else nav('/hospitals', { replace: true });
-    } catch (err) { setError(err.response?.data || 'Login failed. Please check your credentials.'); }
+    } catch (err) { setError(typeof err.response?.data === 'string' ? err.response.data : 'Login failed. Please check your credentials.'); console.log('Login error:', err.response?.status, err.response?.data); }
     finally { setLoading(false); }
   };
 

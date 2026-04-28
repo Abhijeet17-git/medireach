@@ -5,6 +5,7 @@ import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import HospitalFinder from './pages/HospitalFinder';
+import BookingPage from './pages/BookingPage';
 import SymptomChecker from './pages/SymptomChecker';
 import SosPage from './pages/SosPage';
 import SosTrackPage from './pages/SosTrackPage';
@@ -29,6 +30,7 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/hospitals" element={<HospitalFinder />} />
+        <Route path="/bookings" element={<BookingPage />} />
         <Route path="/symptoms" element={<SymptomChecker />} />
         <Route path="/sos/track" element={<SosTrackPage />} />
         <Route path="/sos/history" element={<SosHistory />} />

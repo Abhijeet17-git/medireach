@@ -3,6 +3,12 @@ import React, { useEffect, useMemo, useState } from "react";
 const API = process.env.REACT_APP_API_URL || "https://medireach-production-9d50.up.railway.app";
 const BOOKING_PRICES = { ICU: 2500, GENERAL: 1200, OPD: 400 };
 
+const getRequestErrorMessage = (error, fallback) => (
+  error instanceof TypeError
+    ? "Could not reach the booking server. If this happens only on your phone, open the site from an allowed URL and make sure the backend is reachable on your network."
+    : (error.message || fallback)
+);
+
 export default function BookingPage() {
   const [hospitals, setHospitals] = useState([]);
   const [selected, setSelected] = useState(null);
@@ -132,7 +138,7 @@ export default function BookingPage() {
       razorpay.on("payment.failed", () => setError("Payment was not completed"));
       razorpay.open();
     } catch (e) {
-      setError(e.message || "Payment failed");
+      setError(getRequestErrorMessage(e, "Payment failed"));
     } finally {
       setPaying(false);
     }
@@ -186,7 +192,7 @@ export default function BookingPage() {
       fetchHospitals();
       resetCheckout();
     } catch (e) {
-      setError(e.message || "Booking failed");
+      setError(getRequestErrorMessage(e, "Booking failed"));
     } finally {
       setLoading(false);
     }
@@ -205,7 +211,7 @@ export default function BookingPage() {
       fetchMyBookings();
       fetchHospitals();
     } catch (e) {
-      alert(e.message || "Cancel failed");
+      alert(getRequestErrorMessage(e, "Cancel failed"));
     }
   };
 

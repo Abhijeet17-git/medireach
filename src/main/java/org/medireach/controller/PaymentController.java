@@ -31,20 +31,23 @@ public class PaymentController {
     @PostMapping("/create-order")
     public ResponseEntity<?> createOrder(@RequestBody Map<String, Object> body) {
         try {
-            Long sosId = Long.valueOf(body.get("sosId").toString());
             Integer amount = Integer.valueOf(body.get("amount").toString());
             String patientEmail = body.getOrDefault("patientEmail", "").toString();
+            String purpose = body.getOrDefault("purpose", "SOS").toString().toUpperCase();
+            Object referenceId = body.get("sosId");
 
             RazorpayClient client = new RazorpayClient(keyId, keySecret);
             JSONObject options = new JSONObject();
             options.put("amount", amount * 100); // paise
             options.put("currency", "INR");
-            options.put("receipt", "sos_" + sosId);
+            options.put("receipt", purpose.toLowerCase() + "_" + System.currentTimeMillis());
 
             Order order = client.orders.create(options);
 
             Payment payment = new Payment();
-            payment.setSosId(sosId);
+            if (referenceId != null) {
+                payment.setSosId(Long.valueOf(referenceId.toString()));
+            }
             payment.setRazorpayOrderId(order.get("id"));
             payment.setAmount(amount);
             payment.setStatus("CREATED");

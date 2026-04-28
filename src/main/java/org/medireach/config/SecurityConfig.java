@@ -50,7 +50,18 @@ public class SecurityConfig {
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                .requestMatchers("/**").permitAll()
+                .requestMatchers(
+                    "/api/auth/**",
+                    "/oauth2/**",
+                    "/login/oauth2/**",
+                    "/ws/**",
+                    "/api/hospitals/**",
+                    "/api/reviews/**",
+                    "/api/sos/**",
+                    "/api/test/**"
+                ).permitAll()
+                .requestMatchers("/api/bookings/**").authenticated()
+                .anyRequest().permitAll()
             )
             .oauth2Login(oauth2 -> oauth2.successHandler(oAuth2SuccessHandler))
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);

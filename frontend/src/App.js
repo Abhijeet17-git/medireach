@@ -21,6 +21,14 @@ const ProtectedRoute = ({ children }) => {
   return token ? children : <Navigate to="/login" replace />;
 };
 
+const UserProtectedRoute = ({ children }) => {
+  const token = localStorage.getItem('token');
+  const role = localStorage.getItem('role');
+  if (!token) return <Navigate to="/login" replace />;
+  if (role !== 'USER') return <Navigate to="/" replace />;
+  return children;
+};
+
 export default function App() {
   return (
     <Router>
@@ -30,7 +38,7 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/hospitals" element={<HospitalFinder />} />
-        <Route path="/bookings" element={<BookingPage />} />
+        <Route path="/bookings" element={<UserProtectedRoute><BookingPage /></UserProtectedRoute>} />
         <Route path="/symptoms" element={<SymptomChecker />} />
         <Route path="/sos/track" element={<SosTrackPage />} />
         <Route path="/sos/history" element={<SosHistory />} />

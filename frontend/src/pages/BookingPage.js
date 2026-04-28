@@ -1,19 +1,49 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 
 const API = process.env.REACT_APP_API_URL || "https://medireach-production-9d50.up.railway.app";
+const BOOKING_PRICES = { ICU: 2500, GENERAL: 1200, OPD: 400 };
 
 export default function BookingPage() {
   const [hospitals, setHospitals] = useState([]);
   const [selected, setSelected] = useState(null);
   const [bedType, setBedType] = useState("GENERAL");
-  const [form, setForm] = useState({ patientName: "", patientEmail: "", patientPhone: "", patientAge: "", reason: "", specialityRequested: "" });
+  const [form, setForm] = useState({
+    patientName: "",
+    patientEmail: localStorage.getItem("email") || "",
+    patientPhone: "",
+    patientAge: "",
+    reason: "",
+    specialityRequested: ""
+  });
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [myBookings, setMyBookings] = useState([]);
   const [tab, setTab] = useState("book");
+  const [paymentDone, setPaymentDone] = useState(false);
+  const [paymentMeta, setPaymentMeta] = useState(null);
+  const [paying, setPaying] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpValue, setOtpValue] = useState("");
+  const [otpVerified, setOtpVerified] = useState(false);
+  const [otpError, setOtpError] = useState("");
 
-  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  const token = localStorage.getItem("token") || "";
+  const email = localStorage.getItem("email") || "";
+  const amount = BOOKING_PRICES[bedType];
+
+  const authHeaders = useMemo(() => ({
+    Authorization: `Bearer ${token}`
+  }), [token]);
+
+  const resetCheckout = () => {
+    setPaymentDone(false);
+    setPaymentMeta(null);
+    setOtpSent(false);
+    setOtpValue("");
+    setOtpVerified(false);
+    setOtpError("");
+  };
 
   const fetchHospitals = () => {
     fetch(`${API}/api/hospitals/all`)
@@ -28,36 +58,124 @@ export default function BookingPage() {
       .catch(() => {});
   };
 
-  const fetchMyBookings = (email) => {
-    fetch(`${API}/api/bookings/my?email=${encodeURIComponent(email)}`)
-      .then(r => r.json()).then(setMyBookings).catch(() => {});
+  const fetchMyBookings = () => {
+    fetch(`${API}/api/bookings/my`, { headers: authHeaders })
+      .then(async r => {
+        if (!r.ok) throw new Error("Could not load bookings");
+        return r.json();
+      })
+      .then(setMyBookings)
+      .catch(() => setMyBookings([]));
   };
 
   useEffect(() => {
     fetchHospitals();
-    if (user.email) {
-      setForm(f => ({ ...f, patientEmail: user.email, patientName: user.name || "" }));
-      fetchMyBookings(user.email);
+    if (email) {
+      setForm(f => ({ ...f, patientEmail: email, patientName: f.patientName || email.split("@")[0] }));
+      fetchMyBookings();
     }
   }, []);
 
+  useEffect(() => { resetCheckout(); }, [selected, bedType]);
+
+  const handlePayNow = async () => {
+    if (!selected) return setError("Please select a hospital");
+    if (!form.patientName || !form.patientPhone) return setError("Name and phone are required before payment");
+    if (!window.Razorpay) return setError("Razorpay is not available right now");
+
+    setPaying(true);
+    setError("");
+    try {
+      const orderRes = await fetch(`${API}/api/payment/create-order`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeaders },
+        body: JSON.stringify({
+          amount,
+          patientEmail: email,
+          purpose: "BOOKING"
+        })
+      });
+      const orderData = await orderRes.json();
+      if (!orderRes.ok) throw new Error(typeof orderData === "string" ? orderData : "Payment initialization failed");
+
+      const options = {
+        key: orderData.keyId,
+        amount: orderData.amount,
+        currency: orderData.currency,
+        name: "MediReach",
+        description: `${bedType} bed booking at ${selected.hospitalName}`,
+        order_id: orderData.orderId,
+        prefill: {
+          name: form.patientName,
+          email,
+          contact: form.patientPhone
+        },
+        theme: { color: "#2563eb" },
+        handler: async response => {
+          const verifyRes = await fetch(`${API}/api/payment/verify`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", ...authHeaders },
+            body: JSON.stringify(response)
+          });
+          const verifyData = await verifyRes.json();
+          if (!verifyRes.ok) throw new Error(typeof verifyData === "string" ? verifyData : "Payment verification failed");
+          setPaymentDone(true);
+          setPaymentMeta({
+            paymentId: verifyData.paymentId,
+            orderId: orderData.orderId,
+            amount
+          });
+          setOtpSent(true);
+        }
+      };
+
+      const razorpay = new window.Razorpay(options);
+      razorpay.on("payment.failed", () => setError("Payment was not completed"));
+      razorpay.open();
+    } catch (e) {
+      setError(e.message || "Payment failed");
+    } finally {
+      setPaying(false);
+    }
+  };
+
+  const verifyOtp = () => {
+    if (otpValue === "1234") {
+      setOtpVerified(true);
+      setOtpError("");
+      return;
+    }
+    setOtpVerified(false);
+    setOtpError("Invalid OTP. Use demo OTP 1234");
+  };
+
   const handleBook = async () => {
     if (!selected) return setError("Please select a hospital");
-    if (!form.patientName || !form.patientEmail || !form.patientPhone)
-      return setError("Name, email and phone are required");
+    if (!form.patientName || !form.patientPhone) return setError("Name and phone are required");
+    if (!paymentDone) return setError("Please complete online payment first");
+    if (!otpVerified) return setError("Please verify the booking OTP first");
 
-    setLoading(true); setError(""); setResult(null);
+    setLoading(true);
+    setError("");
+    setResult(null);
     try {
       const res = await fetch(`${API}/api/bookings/book`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, hospitalId: selected.hospitalId, bedType, patientAge: parseInt(form.patientAge) || 0 })
+        headers: { "Content-Type": "application/json", ...authHeaders },
+        body: JSON.stringify({
+          ...form,
+          patientEmail: email,
+          hospitalId: selected.hospitalId,
+          bedType,
+          patientAge: parseInt(form.patientAge, 10) || 0
+        })
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data);
+      if (!res.ok) throw new Error(typeof data === "string" ? data : "Booking failed");
       setResult(data);
-      fetchMyBookings(form.patientEmail);
+      fetchMyBookings();
       fetchHospitals();
+      resetCheckout();
     } catch (e) {
       setError(e.message || "Booking failed");
     } finally {
@@ -65,24 +183,32 @@ export default function BookingPage() {
     }
   };
 
-  const handleCancel = async (bookingId) => {
+  const handleCancel = async bookingId => {
     if (!window.confirm("Cancel this booking?")) return;
     try {
-      const res = await fetch(`${API}/api/bookings/${bookingId}/cancel?email=${encodeURIComponent(form.patientEmail || user.email)}`, { method: "PUT" });
+      const res = await fetch(`${API}/api/bookings/${bookingId}/cancel`, {
+        method: "PUT",
+        headers: authHeaders
+      });
       const data = await res.json();
+      if (!res.ok) throw new Error(typeof data === "string" ? data : "Cancel failed");
       alert(data.message);
-      fetchMyBookings(form.patientEmail || user.email);
+      fetchMyBookings();
       fetchHospitals();
-    } catch { alert("Cancel failed"); }
+    } catch (e) {
+      alert(e.message || "Cancel failed");
+    }
   };
 
   const bedColor = { ICU: "#ef4444", GENERAL: "#3b82f6", OPD: "#10b981" };
   const statusColor = { CONFIRMED: "#10b981", CANCELLED: "#ef4444", COMPLETED: "#6366f1" };
 
   return (
-    <div style={{ maxWidth: 960, margin: "0 auto", padding: "28px 16px", fontFamily: "sans-serif" }}>
-      <h2 style={{ fontSize: 26, fontWeight: 700, color: "#1e293b", marginBottom: 4 }}>🏥 Book a Hospital Bed</h2>
-      <p style={{ color: "#64748b", marginBottom: 24 }}>Reserve your ICU, General, or OPD slot instantly.</p>
+    <div style={{ maxWidth: 1040, margin: "0 auto", padding: "28px 16px", fontFamily: "sans-serif" }}>
+      <h2 style={{ fontSize: 28, fontWeight: 700, color: "#1e293b", marginBottom: 4 }}>Secure Bed Booking</h2>
+      <p style={{ color: "#64748b", marginBottom: 24 }}>
+        Login is required. Pay online, verify demo OTP <b>1234</b>, then confirm your hospital bed booking.
+      </p>
 
       <div style={{ display: "flex", gap: 8, marginBottom: 28 }}>
         {[["book", "Book a Bed"], ["mybookings", "My Bookings"]].map(([t, label]) => (
@@ -131,28 +257,82 @@ export default function BookingPage() {
               ))}
             </div>
 
-            <h3 style={{ fontSize: 15, fontWeight: 600, color: "#334155", marginBottom: 12 }}>3. Your Details</h3>
+            <h3 style={{ fontSize: 15, fontWeight: 600, color: "#334155", marginBottom: 12 }}>3. Patient Details</h3>
             {[
               { key: "patientName", label: "Full Name *", type: "text" },
-              { key: "patientEmail", label: "Email *", type: "email" },
+              { key: "patientEmail", label: "Login Email", type: "email", disabled: true },
               { key: "patientPhone", label: "Phone *", type: "tel" },
               { key: "patientAge", label: "Age", type: "number" },
               { key: "reason", label: "Reason / Symptoms", type: "text" },
-              { key: "specialityRequested", label: "Speciality (e.g. Cardiology)", type: "text" },
+              { key: "specialityRequested", label: "Speciality", type: "text" }
             ].map(f => (
               <div key={f.key} style={{ marginBottom: 12 }}>
                 <label style={{ fontSize: 12, color: "#64748b", fontWeight: 600 }}>{f.label}</label>
-                <input type={f.type} value={form[f.key]}
+                <input
+                  type={f.type}
+                  disabled={f.disabled}
+                  value={form[f.key]}
                   onChange={e => setForm({ ...form, [f.key]: e.target.value })}
-                  style={{ width: "100%", padding: "9px 12px", border: "1.5px solid #e2e8f0", borderRadius: 8, fontSize: 14, marginTop: 4, boxSizing: "border-box" }} />
+                  style={{
+                    width: "100%", padding: "9px 12px", border: "1.5px solid #e2e8f0", borderRadius: 8,
+                    fontSize: 14, marginTop: 4, boxSizing: "border-box",
+                    background: f.disabled ? "#f8fafc" : "#fff"
+                  }}
+                />
               </div>
             ))}
 
-            {error && <div style={{ color: "#ef4444", fontSize: 13, marginBottom: 12 }}>⚠️ {error}</div>}
+            <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 12, padding: 14, marginBottom: 14 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                <span style={{ color: "#64748b", fontSize: 13 }}>Booking fee</span>
+                <b style={{ color: "#1e293b" }}>Rs. {amount}</b>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                <span style={{ color: "#64748b", fontSize: 13 }}>Payment status</span>
+                <b style={{ color: paymentDone ? "#15803d" : "#b45309" }}>{paymentDone ? "Paid" : "Pending"}</b>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span style={{ color: "#64748b", fontSize: 13 }}>OTP status</span>
+                <b style={{ color: otpVerified ? "#15803d" : "#b45309" }}>{otpVerified ? "Verified" : "Pending"}</b>
+              </div>
+            </div>
+
+            <button onClick={handlePayNow} disabled={paying || paymentDone} style={{
+              width: "100%", padding: "12px 0", background: paymentDone ? "#bbf7d0" : "#0f766e",
+              color: paymentDone ? "#166534" : "#fff", border: "none", borderRadius: 10,
+              fontWeight: 700, fontSize: 15, cursor: paymentDone ? "default" : "pointer", marginBottom: 12
+            }}>
+              {paymentDone ? `Payment complete${paymentMeta?.paymentId ? ` · ${paymentMeta.paymentId}` : ""}` : paying ? "Opening Razorpay..." : `Pay Online Rs. ${amount}`}
+            </button>
+
+            {otpSent && (
+              <div style={{ border: "1px solid #bfdbfe", background: "#eff6ff", borderRadius: 12, padding: 14, marginBottom: 12 }}>
+                <div style={{ fontWeight: 700, color: "#1d4ed8", marginBottom: 6 }}>4. Verify Booking OTP</div>
+                <div style={{ color: "#475569", fontSize: 13, marginBottom: 10 }}>Use demo OTP <b>1234</b> to confirm this booking.</div>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <input
+                    value={otpValue}
+                    onChange={e => setOtpValue(e.target.value)}
+                    placeholder="Enter OTP"
+                    style={{ flex: 1, padding: "10px 12px", borderRadius: 8, border: "1.5px solid #93c5fd", fontSize: 14 }}
+                  />
+                  <button onClick={verifyOtp} style={{
+                    padding: "10px 16px", borderRadius: 8, border: "none", background: "#2563eb",
+                    color: "#fff", fontWeight: 700, cursor: "pointer"
+                  }}>
+                    Verify
+                  </button>
+                </div>
+                {otpError && <div style={{ color: "#dc2626", fontSize: 12, marginTop: 8 }}>{otpError}</div>}
+                {otpVerified && <div style={{ color: "#15803d", fontSize: 12, marginTop: 8 }}>OTP verified. You can confirm the booking now.</div>}
+              </div>
+            )}
+
+            {error && <div style={{ color: "#ef4444", fontSize: 13, marginBottom: 12 }}>{error}</div>}
 
             {result && (
               <div style={{ background: "#f0fdf4", border: "1.5px solid #86efac", borderRadius: 10, padding: 14, marginBottom: 14 }}>
-                <div style={{ fontWeight: 700, color: "#15803d" }}>✅ Booking Confirmed!</div>
+                <div style={{ fontWeight: 700, color: "#15803d" }}>Booking Confirmed</div>
                 <div style={{ fontSize: 13, color: "#166534", marginTop: 4 }}>{result.message}</div>
                 <div style={{ fontSize: 12, marginTop: 4 }}>Booking ID: <b>#{result.bookingId}</b></div>
               </div>
@@ -164,7 +344,7 @@ export default function BookingPage() {
               color: "#fff", border: "none", borderRadius: 10,
               fontWeight: 700, fontSize: 15, cursor: loading ? "not-allowed" : "pointer"
             }}>
-              {loading ? "Booking..." : `Reserve ${bedType} Bed`}
+              {loading ? "Booking..." : `Confirm ${bedType} Booking`}
             </button>
 
             {selected && (

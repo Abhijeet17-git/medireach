@@ -76,7 +76,7 @@ export default function Navbar() {
           {!loggedIn && (
             <>
               <Link to="/hospitals" className={a('/hospitals')}>Hospitals</Link>
-              <Link to="/bookings" className={a('/bookings')}>Bookings</Link>
+              <Link to="/login" className={a('/login')}>Login to Book</Link>
               <Link to="/symptoms" className={a('/symptoms')}>Symptom AI</Link>
               <Link to="/sos" className="nav-sos">⚡ SOS</Link>
               <Link to="/login" className={a('/login')}>Login</Link>

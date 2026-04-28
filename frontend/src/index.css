@@ -82,22 +82,16 @@ body{
 }
 .nav-logo-icon{
   width:36px;height:36px;
-  background:linear-gradient(135deg,#1565C0 0%, #0D47A1 100%);
+  background:transparent;
   border-radius:12px;
   display:flex;align-items:center;justify-content:center;
-  box-shadow:0 6px 16px rgba(21,101,192,0.28);
+  box-shadow:none;
   transition:transform 0.2s;
 }
 .nav-logo:hover .nav-logo-icon{transform:scale(1.07);}
 .nav-logo-text{display:flex;flex-direction:column;line-height:1;}
 .nav-logo-text strong{
   font-size:19px;font-weight:800;letter-spacing:-0.4px;color:var(--navy);
-}
-.nav-logo-text span{color:var(--blue);}
-.nav-logo-text small{
-  margin-top:3px;
-  font-size:10px;font-weight:700;letter-spacing:0.14em;
-  text-transform:uppercase;color:var(--gray500);
 }
 .nav-links{display:flex;align-items:center;gap:2px;}
 .nav-a{

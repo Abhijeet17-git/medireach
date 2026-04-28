@@ -9,6 +9,7 @@ export default function SuperAdminPage() {
   const [hospitalAdmins, setHospitalAdmins] = useState([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState('pending');
+  const [actionError, setActionError] = useState('');
   const nav = useNavigate();
   const token = localStorage.getItem('token');
   const authHeaders = token ? { Authorization: `Bearer ${token}` } : {};
@@ -21,6 +22,7 @@ export default function SuperAdminPage() {
 
   const fetchData = async () => {
     setLoading(true);
+    setActionError('');
     try {
       const [hRes, uRes, aRes] = await Promise.all([
         fetch(`${API}/api/superadmin/hospitals`, { headers: authHeaders }),
@@ -30,17 +32,29 @@ export default function SuperAdminPage() {
       setHospitals(await hRes.json());
       setUsers(await uRes.json());
       setHospitalAdmins(await aRes.json());
-    } catch {}
+    } catch {
+      setActionError('Failed to load admin data.');
+    }
     finally { setLoading(false); }
   };
 
   const approve = async (id) => {
-    await fetch(`${API}/api/superadmin/hospitals/${id}/approve`, { method: 'PUT', headers: authHeaders });
+    setActionError('');
+    const res = await fetch(`${API}/api/superadmin/hospitals/${id}/approve`, { method: 'PUT', headers: authHeaders });
+    if (!res.ok) {
+      setActionError('Could not approve hospital.');
+      return;
+    }
     fetchData();
   };
 
   const reject = async (id) => {
-    await fetch(`${API}/api/superadmin/hospitals/${id}/reject`, { method: 'PUT', headers: authHeaders });
+    setActionError('');
+    const res = await fetch(`${API}/api/superadmin/hospitals/${id}/reject`, { method: 'PUT', headers: authHeaders });
+    if (!res.ok) {
+      setActionError('Could not reject hospital.');
+      return;
+    }
     fetchData();
   };
 
@@ -56,9 +70,9 @@ export default function SuperAdminPage() {
     fetchData();
   };
 
-  const pending = hospitals.filter(h => !h.verified && !h.active);
+  const pending = hospitals.filter(h => !h.verified && h.active);
   const verified = hospitals.filter(h => h.verified && h.active);
-  const rejected = hospitals.filter(h => !h.active && h.verified === false);
+  const rejected = hospitals.filter(h => !h.verified && !h.active);
 
   if (loading) return <div style={{ padding: 40, textAlign: 'center' }}>Loading...</div>;
 
@@ -94,28 +108,35 @@ export default function SuperAdminPage() {
 
         {/* Tabs */}
         <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
-          {['pending', 'verified', 'admins', 'users'].map(t => (
+          {['pending', 'verified', 'rejected', 'admins', 'users'].map(t => (
             <button key={t} onClick={() => setTab(t)}
               style={{ padding: '8px 20px', borderRadius: 20, border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 13,
                 background: tab === t ? '#1E293B' : 'white', color: tab === t ? 'white' : '#64748B',
                 boxShadow: tab === t ? 'none' : '0 1px 4px rgba(0,0,0,0.08)' }}>
-              {t === 'pending' ? `⏳ Pending (${hospitals.filter(h => !h.verified).length})`
+              {t === 'pending' ? `⏳ Pending (${pending.length})`
                 : t === 'verified' ? `✅ Verified (${hospitals.filter(h => h.verified).length})`
+                : t === 'rejected' ? `❌ Rejected (${rejected.length})`
                 : t === 'admins' ? `🏥 Admins (${hospitalAdmins.length})`
                 : `👥 Users (${users.length})`}
             </button>
           ))}
         </div>
 
+        {actionError && (
+          <div style={{ marginBottom: 16, padding: '12px 14px', borderRadius: 10, background: '#FEF2F2', color: '#B91C1C', border: '1px solid #FECACA', fontSize: 13, fontWeight: 600 }}>
+            {actionError}
+          </div>
+        )}
+
         {/* Pending Hospitals */}
         {tab === 'pending' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {hospitals.filter(h => !h.verified).length === 0 && (
+            {pending.length === 0 && (
               <div style={{ textAlign: 'center', padding: 40, color: '#94A3B8', background: 'white', borderRadius: 12 }}>
                 No pending hospitals 🎉
               </div>
             )}
-            {hospitals.filter(h => !h.verified).map(h => (
+            {pending.map(h => (
               <div key={h.id} style={{ background: 'white', borderRadius: 12, padding: '20px 24px', boxShadow: '0 1px 4px rgba(0,0,0,0.08)', border: '1.5px solid #FEF3C7' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                   <div>
@@ -174,7 +195,7 @@ export default function SuperAdminPage() {
         {/* Verified Hospitals */}
         {tab === 'verified' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {hospitals.filter(h => h.verified).map(h => (
+            {verified.map(h => (
               <div key={h.id} style={{ background: 'white', borderRadius: 12, padding: '20px 24px', boxShadow: '0 1px 4px rgba(0,0,0,0.08)', border: '1.5px solid #D1FAE5' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div>
@@ -188,6 +209,30 @@ export default function SuperAdminPage() {
                   <button onClick={() => deleteHospital(h.id, h.name)}
                     style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: '#7F1D1D', color: 'white', fontWeight: 600, cursor: 'pointer', fontSize: 13, marginLeft: 8 }}>
                     Delete Hospital
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {tab === 'rejected' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {rejected.length === 0 && (
+              <div style={{ textAlign: 'center', padding: 40, color: '#94A3B8', background: 'white', borderRadius: 12 }}>
+                No rejected hospitals
+              </div>
+            )}
+            {rejected.map(h => (
+              <div key={h.id} style={{ background: 'white', borderRadius: 12, padding: '20px 24px', boxShadow: '0 1px 4px rgba(0,0,0,0.08)', border: '1.5px solid #FECACA' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: 16, color: '#1E293B', marginBottom: 4 }}>❌ {h.name}</div>
+                    <div style={{ fontSize: 13, color: '#64748B' }}>📍 {h.address}, {h.city} · 📞 {h.phone}</div>
+                  </div>
+                  <button onClick={() => approve(h.id)}
+                    style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: '#10B981', color: 'white', fontWeight: 700, cursor: 'pointer', fontSize: 13 }}>
+                    Approve
                   </button>
                 </div>
               </div>

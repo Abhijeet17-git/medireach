@@ -9,7 +9,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/hospitals")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 public class HospitalController {
     private final HospitalService hospitalService;
 

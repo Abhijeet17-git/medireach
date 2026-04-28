@@ -19,7 +19,6 @@ import java.util.Optional;
 @RestController
 @RequestMapping("/api/payment")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 public class PaymentController {
 
     @Value("${razorpay.key-id}")

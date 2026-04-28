@@ -5,7 +5,6 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/test")
-@CrossOrigin(origins = "*")
 public class TestController {
 
     @Value("${gemini.api.key}")

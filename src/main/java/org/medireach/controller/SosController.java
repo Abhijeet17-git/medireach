@@ -10,7 +10,6 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/sos")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 public class SosController {
 
     private final SosService sosService;

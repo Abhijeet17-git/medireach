@@ -6,9 +6,12 @@ const API = 'https://medireach-production-9d50.up.railway.app';
 export default function SuperAdminPage() {
   const [hospitals, setHospitals] = useState([]);
   const [users, setUsers] = useState([]);
+  const [hospitalAdmins, setHospitalAdmins] = useState([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState('pending');
   const nav = useNavigate();
+  const token = localStorage.getItem('token');
+  const authHeaders = token ? { Authorization: `Bearer ${token}` } : {};
 
   useEffect(() => {
     const role = localStorage.getItem('role');
@@ -19,23 +22,37 @@ export default function SuperAdminPage() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [hRes, uRes] = await Promise.all([
-        fetch(`${API}/api/superadmin/hospitals`),
-        fetch(`${API}/api/superadmin/users`)
+      const [hRes, uRes, aRes] = await Promise.all([
+        fetch(`${API}/api/superadmin/hospitals`, { headers: authHeaders }),
+        fetch(`${API}/api/superadmin/users`, { headers: authHeaders }),
+        fetch(`${API}/api/superadmin/hospital-admins`, { headers: authHeaders })
       ]);
       setHospitals(await hRes.json());
       setUsers(await uRes.json());
+      setHospitalAdmins(await aRes.json());
     } catch {}
     finally { setLoading(false); }
   };
 
   const approve = async (id) => {
-    await fetch(`${API}/api/superadmin/hospitals/${id}/approve`, { method: 'PUT' });
+    await fetch(`${API}/api/superadmin/hospitals/${id}/approve`, { method: 'PUT', headers: authHeaders });
     fetchData();
   };
 
   const reject = async (id) => {
-    await fetch(`${API}/api/superadmin/hospitals/${id}/reject`, { method: 'PUT' });
+    await fetch(`${API}/api/superadmin/hospitals/${id}/reject`, { method: 'PUT', headers: authHeaders });
+    fetchData();
+  };
+
+  const deleteHospital = async (id, name) => {
+    if (!window.confirm(`Delete hospital "${name}" and its hospital-admin accounts?`)) return;
+    await fetch(`${API}/api/superadmin/hospitals/${id}`, { method: 'DELETE', headers: authHeaders });
+    fetchData();
+  };
+
+  const deleteUser = async (id, email) => {
+    if (!window.confirm(`Delete user "${email}"?`)) return;
+    await fetch(`${API}/api/superadmin/users/${id}`, { method: 'DELETE', headers: authHeaders });
     fetchData();
   };
 
@@ -77,12 +94,15 @@ export default function SuperAdminPage() {
 
         {/* Tabs */}
         <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
-          {['pending', 'verified', 'users'].map(t => (
+          {['pending', 'verified', 'admins', 'users'].map(t => (
             <button key={t} onClick={() => setTab(t)}
               style={{ padding: '8px 20px', borderRadius: 20, border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 13,
                 background: tab === t ? '#1E293B' : 'white', color: tab === t ? 'white' : '#64748B',
                 boxShadow: tab === t ? 'none' : '0 1px 4px rgba(0,0,0,0.08)' }}>
-              {t === 'pending' ? `⏳ Pending (${hospitals.filter(h => !h.verified).length})` : t === 'verified' ? `✅ Verified (${hospitals.filter(h => h.verified).length})` : `👥 Users (${users.length})`}
+              {t === 'pending' ? `⏳ Pending (${hospitals.filter(h => !h.verified).length})`
+                : t === 'verified' ? `✅ Verified (${hospitals.filter(h => h.verified).length})`
+                : t === 'admins' ? `🏥 Admins (${hospitalAdmins.length})`
+                : `👥 Users (${users.length})`}
             </button>
           ))}
         </div>
@@ -165,9 +185,42 @@ export default function SuperAdminPage() {
                     style={{ padding: '8px 16px', borderRadius: 8, border: '1.5px solid #EF4444', background: 'white', color: '#EF4444', fontWeight: 600, cursor: 'pointer', fontSize: 13 }}>
                     Revoke
                   </button>
+                  <button onClick={() => deleteHospital(h.id, h.name)}
+                    style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: '#7F1D1D', color: 'white', fontWeight: 600, cursor: 'pointer', fontSize: 13, marginLeft: 8 }}>
+                    Delete Hospital
+                  </button>
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {tab === 'admins' && (
+          <div style={{ background: 'white', borderRadius: 12, overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,0,0,0.08)' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ background: '#F8FAFC', borderBottom: '1.5px solid #E2E8F0' }}>
+                  {['ID', 'Email', 'Hospital ID', 'Action'].map(h => (
+                    <th key={h} style={{ padding: '12px 16px', textAlign: 'left', fontSize: 12, fontWeight: 700, color: '#64748B', textTransform: 'uppercase' }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {hospitalAdmins.map(u => (
+                  <tr key={u.id} style={{ borderBottom: '1px solid #F1F5F9' }}>
+                    <td style={{ padding: '12px 16px', fontSize: 13, color: '#64748B' }}>#{u.id}</td>
+                    <td style={{ padding: '12px 16px', fontSize: 13, fontWeight: 600, color: '#1E293B' }}>{u.email}</td>
+                    <td style={{ padding: '12px 16px', fontSize: 13, color: '#64748B' }}>{u.hospitalId || '—'}</td>
+                    <td style={{ padding: '12px 16px' }}>
+                      <button onClick={() => deleteUser(u.id, u.email)}
+                        style={{ padding: '8px 14px', borderRadius: 8, border: 'none', background: '#DC2626', color: 'white', fontWeight: 700, cursor: 'pointer', fontSize: 12 }}>
+                        Delete Admin
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
 
@@ -177,7 +230,7 @@ export default function SuperAdminPage() {
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ background: '#F8FAFC', borderBottom: '1.5px solid #E2E8F0' }}>
-                  {['ID', 'Email', 'Role', 'Hospital ID'].map(h => (
+                  {['ID', 'Email', 'Role', 'Hospital ID', 'Action'].map(h => (
                     <th key={h} style={{ padding: '12px 16px', textAlign: 'left', fontSize: 12, fontWeight: 700, color: '#64748B', textTransform: 'uppercase' }}>{h}</th>
                   ))}
                 </tr>
@@ -195,6 +248,16 @@ export default function SuperAdminPage() {
                       </span>
                     </td>
                     <td style={{ padding: '12px 16px', fontSize: 13, color: '#64748B' }}>{u.hospitalId || '—'}</td>
+                    <td style={{ padding: '12px 16px' }}>
+                      {u.role === 'SUPER_ADMIN' ? (
+                        <span style={{ fontSize: 12, color: '#94A3B8' }}>Protected</span>
+                      ) : (
+                        <button onClick={() => deleteUser(u.id, u.email)}
+                          style={{ padding: '8px 14px', borderRadius: 8, border: 'none', background: '#DC2626', color: 'white', fontWeight: 700, cursor: 'pointer', fontSize: 12 }}>
+                          Delete User
+                        </button>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>

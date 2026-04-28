@@ -60,6 +60,7 @@ public class SecurityConfig {
                     "/api/sos/**",
                     "/api/test/**"
                 ).permitAll()
+                .requestMatchers("/api/superadmin/**").hasRole("SUPER_ADMIN")
                 .requestMatchers("/api/bookings/**").authenticated()
                 .anyRequest().permitAll()
             )

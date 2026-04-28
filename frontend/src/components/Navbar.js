@@ -30,13 +30,14 @@ export default function Navbar() {
         <Link to="/" className="nav-logo">
           <div className="nav-logo-icon">
             <svg width="22" height="22" viewBox="0 0 64 64" fill="none" aria-hidden="true">
-              <path d="M32 14C23.2 14 16 21.2 16 30c0 11.8 16 20 16 20s16-8.2 16-20c0-8.8-7.2-16-16-16Z" fill="#fff"/>
-              <path d="M35 22h-6v7h-7v6h7v7h6v-7h7v-6h-7z" fill="#D32F2F"/>
+              <rect x="8" y="8" width="48" height="48" rx="12" fill="#DCFCE7"/>
+              <path d="M32 18C24.268 18 18 24.268 18 32c0 10.5 14 18 14 18s14-7.5 14-18c0-7.732-6.268-14-14-14Z" fill="#EF4444"/>
+              <path d="M35 24h-6v5h-5v6h5v5h6v-5h5v-6h-5z" fill="#fff"/>
             </svg>
           </div>
           <div className="nav-logo-text">
             <strong>Medi<span>Reach</span></strong>
-            <small>Emergency Response</small>
+            <small>AI Emergency Care</small>
           </div>
         </Link>
 

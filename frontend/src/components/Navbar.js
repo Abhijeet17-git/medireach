@@ -29,12 +29,15 @@ export default function Navbar() {
       <div className="nav-inner">
         <Link to="/" className="nav-logo">
           <div className="nav-logo-icon">
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-              <path d="M9 3v4M9 11v4M3 9h4M11 9h4" stroke="white" strokeWidth="2.2" strokeLinecap="round"/>
-              <circle cx="9" cy="9" r="2.5" fill="white"/>
+            <svg width="22" height="22" viewBox="0 0 64 64" fill="none" aria-hidden="true">
+              <path d="M32 14C23.2 14 16 21.2 16 30c0 11.8 16 20 16 20s16-8.2 16-20c0-8.8-7.2-16-16-16Z" fill="#fff"/>
+              <path d="M35 22h-6v7h-7v6h7v7h6v-7h7v-6h-7z" fill="#D32F2F"/>
             </svg>
           </div>
-          Medi<span>Reach</span>
+          <div className="nav-logo-text">
+            <strong>Medi<span>Reach</span></strong>
+            <small>Emergency Response</small>
+          </div>
         </Link>
 
         <div className="nav-links">

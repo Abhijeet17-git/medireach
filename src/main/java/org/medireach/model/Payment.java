@@ -14,6 +14,8 @@ public class Payment {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private Long sosId;
+    private Long bookingId;
+    private String purpose;
     private String razorpayOrderId;
     private String razorpayPaymentId;
     private String razorpaySignature;

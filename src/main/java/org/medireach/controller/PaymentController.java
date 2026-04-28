@@ -6,9 +6,11 @@ import com.razorpay.Utils;
 import lombok.RequiredArgsConstructor;
 import org.json.JSONObject;
 import org.medireach.model.Payment;
+import org.medireach.repository.BookingRepository;
 import org.medireach.repository.PaymentRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -27,6 +29,7 @@ public class PaymentController {
     private String keySecret;
 
     private final PaymentRepository paymentRepository;
+    private final BookingRepository bookingRepository;
 
     @PostMapping("/create-order")
     public ResponseEntity<?> createOrder(@RequestBody Map<String, Object> body) {
@@ -46,8 +49,11 @@ public class PaymentController {
 
             Payment payment = new Payment();
             if (referenceId != null) {
-                payment.setSosId(Long.valueOf(referenceId.toString()));
+                Long parsedReferenceId = Long.valueOf(referenceId.toString());
+                if ("BOOKING".equals(purpose)) payment.setBookingId(parsedReferenceId);
+                else payment.setSosId(parsedReferenceId);
             }
+            payment.setPurpose(purpose);
             payment.setRazorpayOrderId(order.get("id"));
             payment.setAmount(amount);
             payment.setStatus("CREATED");
@@ -92,6 +98,39 @@ public class PaymentController {
             return ResponseEntity.ok(Map.of("status", "PAID", "paymentId", paymentId));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("Verification failed: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/attach-booking")
+    public ResponseEntity<?> attachBookingPayment(@RequestBody Map<String, String> body, Authentication authentication) {
+        try {
+            if (authentication == null || !authentication.getAuthorities().stream().anyMatch(a -> "ROLE_USER".equals(a.getAuthority()))) {
+                return ResponseEntity.status(403).body("Please login as a user to attach booking payment");
+            }
+
+            Long bookingId = Long.valueOf(body.get("bookingId"));
+            String orderId = body.get("orderId");
+
+            if (bookingRepository.findById(bookingId).filter(b -> authentication.getName().equals(b.getPatientEmail())).isEmpty()) {
+                return ResponseEntity.status(403).body("You can only attach payment to your own booking");
+            }
+
+            Optional<Payment> paymentOpt = paymentRepository.findByRazorpayOrderId(orderId);
+            if (paymentOpt.isEmpty()) {
+                return ResponseEntity.badRequest().body("Payment order not found");
+            }
+
+            Payment payment = paymentOpt.get();
+            if (!authentication.getName().equals(payment.getPatientEmail())) {
+                return ResponseEntity.status(403).body("Payment does not belong to this user");
+            }
+
+            payment.setPurpose("BOOKING");
+            payment.setBookingId(bookingId);
+            paymentRepository.save(payment);
+            return ResponseEntity.ok(Map.of("status", payment.getStatus(), "bookingId", bookingId));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Could not attach booking payment: " + e.getMessage());
         }
     }
 

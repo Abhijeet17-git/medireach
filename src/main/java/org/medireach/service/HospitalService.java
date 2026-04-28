@@ -65,6 +65,8 @@ public class HospitalService {
         dto.setAmbulanceAvailable(h.getAmbulanceAvailable());
         dto.setAmbulancePhone(h.getAmbulancePhone());
         dto.setSpecialities(h.getSpecialities());
+        dto.setActive(h.getActive());
+        dto.setVerified(h.getVerified());
         Double avg = reviewRepository.findAvgRatingByHospitalId(h.getId());
         dto.setAvgRating(avg != null ? Math.round(avg * 10.0) / 10.0 : 0.0);
         dto.setTotalReviews((int) reviewRepository.findByHospitalIdOrderByCreatedAtDesc(h.getId()).size());

@@ -125,7 +125,6 @@ export default function BookingPage() {
             orderId: orderData.orderId,
             amount
           });
-          setOtpSent(true);
         }
       };
 
@@ -152,7 +151,6 @@ export default function BookingPage() {
   const handleBook = async () => {
     if (!selected) return setError("Please select a hospital");
     if (!form.patientName || !form.patientPhone) return setError("Name and phone are required");
-    if (!paymentDone) return setError("Please complete online payment first");
     if (!otpVerified) return setError("Please verify the booking OTP first");
 
     setLoading(true);
@@ -167,11 +165,22 @@ export default function BookingPage() {
           patientEmail: email,
           hospitalId: selected.hospitalId,
           bedType,
-          patientAge: parseInt(form.patientAge, 10) || 0
+          patientAge: parseInt(form.patientAge, 10) || 0,
+          otpCode: otpValue
         })
       });
       const data = await res.json();
       if (!res.ok) throw new Error(typeof data === "string" ? data : "Booking failed");
+      if (paymentMeta?.orderId) {
+        await fetch(`${API}/api/payment/attach-booking`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", ...authHeaders },
+          body: JSON.stringify({
+            bookingId: data.bookingId,
+            orderId: paymentMeta.orderId
+          })
+        }).catch(() => {});
+      }
       setResult(data);
       fetchMyBookings();
       fetchHospitals();
@@ -201,13 +210,33 @@ export default function BookingPage() {
   };
 
   const bedColor = { ICU: "#ef4444", GENERAL: "#3b82f6", OPD: "#10b981" };
-  const statusColor = { CONFIRMED: "#10b981", CANCELLED: "#ef4444", COMPLETED: "#6366f1" };
+  const statusColor = {
+    PENDING: "#d97706",
+    CONFIRMED: "#10b981",
+    REJECTED: "#ef4444",
+    HOSPITAL_CANCELLED: "#dc2626",
+    CANCELLED: "#64748b",
+    COMPLETED: "#6366f1"
+  };
+
+  const statusLabel = status => (
+    status === "HOSPITAL_CANCELLED" ? "Cancelled by Hospital" : status
+  );
+
+  const sendOtp = () => {
+    if (!selected) return setError("Please select a hospital");
+    if (!form.patientName || !form.patientPhone) return setError("Name and phone are required before OTP verification");
+    setOtpSent(true);
+    setOtpVerified(false);
+    setOtpError("");
+    setError("");
+  };
 
   return (
     <div style={{ maxWidth: 1040, margin: "0 auto", padding: "28px 16px", fontFamily: "sans-serif" }}>
       <h2 style={{ fontSize: 28, fontWeight: 700, color: "#1e293b", marginBottom: 4 }}>Secure Bed Booking</h2>
       <p style={{ color: "#64748b", marginBottom: 24 }}>
-        Login is required. Pay online, verify demo OTP <b>1234</b>, then confirm your hospital bed booking.
+        Login is required. Payment is optional, but demo OTP <b>1234</b> is required for every booking.
       </p>
 
       <div style={{ display: "flex", gap: 8, marginBottom: 28 }}>
@@ -289,7 +318,7 @@ export default function BookingPage() {
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
                 <span style={{ color: "#64748b", fontSize: 13 }}>Payment status</span>
-                <b style={{ color: paymentDone ? "#15803d" : "#b45309" }}>{paymentDone ? "Paid" : "Pending"}</b>
+                <b style={{ color: paymentDone ? "#15803d" : "#64748b" }}>{paymentDone ? "Paid online" : "Skipped / Pay later"}</b>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <span style={{ color: "#64748b", fontSize: 13 }}>OTP status</span>
@@ -300,9 +329,17 @@ export default function BookingPage() {
             <button onClick={handlePayNow} disabled={paying || paymentDone} style={{
               width: "100%", padding: "12px 0", background: paymentDone ? "#bbf7d0" : "#0f766e",
               color: paymentDone ? "#166534" : "#fff", border: "none", borderRadius: 10,
-              fontWeight: 700, fontSize: 15, cursor: paymentDone ? "default" : "pointer", marginBottom: 12
+              fontWeight: 700, fontSize: 15, cursor: paymentDone ? "default" : "pointer", marginBottom: 10
             }}>
               {paymentDone ? `Payment complete${paymentMeta?.paymentId ? ` · ${paymentMeta.paymentId}` : ""}` : paying ? "Opening Razorpay..." : `Pay Online Rs. ${amount}`}
+            </button>
+
+            <button onClick={sendOtp} style={{
+              width: "100%", padding: "12px 0", background: "#dbeafe",
+              color: "#1d4ed8", border: "1px solid #93c5fd", borderRadius: 10,
+              fontWeight: 700, fontSize: 15, cursor: "pointer", marginBottom: 12
+            }}>
+              {otpSent ? "Resend Demo OTP" : "Send Booking OTP"}
             </button>
 
             {otpSent && (
@@ -331,9 +368,11 @@ export default function BookingPage() {
             {error && <div style={{ color: "#ef4444", fontSize: 13, marginBottom: 12 }}>{error}</div>}
 
             {result && (
-              <div style={{ background: "#f0fdf4", border: "1.5px solid #86efac", borderRadius: 10, padding: 14, marginBottom: 14 }}>
-                <div style={{ fontWeight: 700, color: "#15803d" }}>Booking Confirmed</div>
-                <div style={{ fontSize: 13, color: "#166534", marginTop: 4 }}>{result.message}</div>
+              <div style={{ background: result.status === "PENDING" ? "#fff7ed" : "#f0fdf4", border: `1.5px solid ${result.status === "PENDING" ? "#fdba74" : "#86efac"}`, borderRadius: 10, padding: 14, marginBottom: 14 }}>
+                <div style={{ fontWeight: 700, color: result.status === "PENDING" ? "#c2410c" : "#15803d" }}>
+                  {result.status === "PENDING" ? "Booking Request Sent" : "Booking Confirmed"}
+                </div>
+                <div style={{ fontSize: 13, color: result.status === "PENDING" ? "#9a3412" : "#166534", marginTop: 4 }}>{result.message}</div>
                 <div style={{ fontSize: 12, marginTop: 4 }}>Booking ID: <b>#{result.bookingId}</b></div>
               </div>
             )}
@@ -344,7 +383,7 @@ export default function BookingPage() {
               color: "#fff", border: "none", borderRadius: 10,
               fontWeight: 700, fontSize: 15, cursor: loading ? "not-allowed" : "pointer"
             }}>
-              {loading ? "Booking..." : `Confirm ${bedType} Booking`}
+              {loading ? "Booking..." : `Submit ${bedType} Booking Request`}
             </button>
 
             {selected && (
@@ -366,14 +405,14 @@ export default function BookingPage() {
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                   <div>
                     <span style={{ background: (bedColor[b.bedType] || "#888") + "22", color: bedColor[b.bedType] || "#888", fontWeight: 700, fontSize: 12, padding: "2px 10px", borderRadius: 6 }}>{b.bedType}</span>
-                    <span style={{ marginLeft: 8, background: (statusColor[b.status] || "#888") + "22", color: statusColor[b.status] || "#888", fontWeight: 700, fontSize: 12, padding: "2px 10px", borderRadius: 6 }}>{b.status}</span>
+                    <span style={{ marginLeft: 8, background: (statusColor[b.status] || "#888") + "22", color: statusColor[b.status] || "#888", fontWeight: 700, fontSize: 12, padding: "2px 10px", borderRadius: 6 }}>{statusLabel(b.status)}</span>
                     <div style={{ fontWeight: 600, color: "#1e293b", marginTop: 8 }}>{b.hospitalName}</div>
                     <div style={{ fontSize: 12, color: "#64748b" }}>Booked: {new Date(b.bookingTime).toLocaleString()}</div>
                     {b.reason && <div style={{ fontSize: 12, color: "#64748b" }}>Reason: {b.reason}</div>}
                   </div>
                   <div style={{ textAlign: "right" }}>
                     <div style={{ fontSize: 13, fontWeight: 700, color: "#6366f1" }}>#{b.id}</div>
-                    {b.status === "CONFIRMED" && (
+                    {(b.status === "PENDING" || b.status === "CONFIRMED") && (
                       <button onClick={() => handleCancel(b.id)} style={{
                         marginTop: 8, padding: "6px 14px", background: "#fee2e2",
                         color: "#b91c1c", border: "none", borderRadius: 8,

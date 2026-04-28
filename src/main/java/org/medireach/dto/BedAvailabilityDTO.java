@@ -19,4 +19,6 @@ public class BedAvailabilityDTO {
     private String specialities;
     private Double avgRating;
     private Integer totalReviews;
+    private Boolean active;
+    private Boolean verified;
 }

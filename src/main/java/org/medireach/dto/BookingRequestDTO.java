@@ -13,4 +13,5 @@ public class BookingRequestDTO {
     private String reason;
     private String specialityRequested;
     private String scheduledTime;
+    private String otpCode;
 }

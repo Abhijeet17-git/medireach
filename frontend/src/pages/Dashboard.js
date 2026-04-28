@@ -8,6 +8,9 @@ export default function Dashboard() {
   const [hospital, setHospital] = useState(null);
   const [verified, setVerified] = useState(true);
   const [loading, setLoading] = useState(true);
+  const [bookings, setBookings] = useState([]);
+  const [bookingsLoading, setBookingsLoading] = useState(false);
+  const [bookingsError, setBookingsError] = useState('');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
@@ -18,6 +21,7 @@ export default function Dashboard() {
   const email = localStorage.getItem('email');
   const hospitalId = localStorage.getItem('hospitalId');
   const hospitalName = localStorage.getItem('hospitalName');
+  const authHeaders = token ? { Authorization: `Bearer ${token}` } : {};
 
   const load = async () => {
     setLoading(true); setError('');
@@ -26,6 +30,7 @@ export default function Dashboard() {
       const mine = data.find(h => String(h.hospitalId) === String(hospitalId));
       if (mine) {
         setHospital(mine);
+        setVerified(mine.verified === true || mine.verified === 1);
         setBeds({
           icuBeds: mine.availableIcuBeds ?? 0,
           generalBeds: mine.availableGeneralBeds ?? 0,
@@ -39,30 +44,6 @@ export default function Dashboard() {
   };
 
   useEffect(() => { load(); }, []);
-
-  useEffect(() => {
-    const checkVerified = async () => {
-      try {
-        const res = await fetch(`${API}/api/superadmin/hospitals`);
-        const data = await res.json();
-        const mine = data.find(h => String(h.id) === String(hospitalId));
-        if (mine) setVerified(mine.verified === true || mine.verified === 1);
-      } catch {}
-    };
-    checkVerified();
-  }, [hospitalId]);
-
-  useEffect(() => {
-    const checkVerified = async () => {
-      try {
-        const res = await fetch(`${API}/api/superadmin/hospitals`);
-        const data = await res.json();
-        const mine = data.find(h => String(h.id) === String(hospitalId));
-        if (mine) setVerified(mine.verified === true || mine.verified === 1);
-      } catch {}
-    };
-    checkVerified();
-  }, [hospitalId]);
 
   // Poll for active SOS requests every 5 seconds
   useEffect(() => {
@@ -80,6 +61,26 @@ export default function Dashboard() {
     const interval = setInterval(fetchSos, 5000);
     return () => clearInterval(interval);
   }, [hospitalId]);
+
+  useEffect(() => {
+    if (!hospitalId || !token) return;
+    const fetchBookings = async () => {
+      setBookingsLoading(true);
+      setBookingsError('');
+      try {
+        const res = await fetch(`${API}/api/bookings/hospital/${hospitalId}`, { headers: authHeaders });
+        if (!res.ok) throw new Error();
+        setBookings(await res.json());
+      } catch {
+        setBookingsError('Could not load booking requests right now.');
+      } finally {
+        setBookingsLoading(false);
+      }
+    };
+    fetchBookings();
+    const interval = setInterval(fetchBookings, 5000);
+    return () => clearInterval(interval);
+  }, [hospitalId, token]);
 
   const save = async () => {
     setSaving(true); setError(''); setSaved(false);
@@ -101,6 +102,25 @@ export default function Dashboard() {
 
   const logout = () => { localStorage.clear(); nav('/'); };
 
+  const updateBookingStatus = async (bookingId, status) => {
+    try {
+      const res = await fetch(`${API}/api/bookings/${bookingId}/status?hospitalId=${hospitalId}&status=${status}`, {
+        method: 'PUT',
+        headers: authHeaders
+      });
+      if (!res.ok) throw new Error('Failed to update booking');
+      await load();
+      const refreshed = await fetch(`${API}/api/bookings/hospital/${hospitalId}`, { headers: authHeaders });
+      if (refreshed.ok) setBookings(await refreshed.json());
+    } catch {
+      setError('Failed to update booking status.');
+    }
+  };
+
+  const bookingStatusLabel = (status) => (
+    status === 'HOSPITAL_CANCELLED' ? 'Cancelled by Hospital' : status
+  );
+
   const tiles = [
     { label: 'ICU Beds Available', value: hospital?.availableIcuBeds ?? 0,    color: 'var(--red)',   bg: 'var(--red-lt)',   Icon: Bed },
     { label: 'General Beds',       value: hospital?.availableGeneralBeds ?? 0, color: 'var(--blue)',  bg: 'var(--blue-lt)',  Icon: Bed },
@@ -108,7 +128,15 @@ export default function Dashboard() {
     { label: 'Ambulance',          value: hospital?.ambulanceAvailable ? 'Active' : 'N/A', color: 'var(--teal)', bg: 'var(--teal-lt)', Icon: Zap },
   ];
 
-  const verificationBanner = !verified ? (
+  const verificationBanner = hospital?.active === false ? (
+    <div style={{ background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 10, padding: '10px 18px', margin: '16px 32px 0', display: 'flex', alignItems: 'center', gap: 10 }}>
+      <span style={{ fontSize: 18 }}>❌</span>
+      <div>
+        <div style={{ fontWeight: 700, color: '#B91C1C', fontSize: 14 }}>Hospital Rejected</div>
+        <div style={{ fontSize: 12, color: '#B91C1C', marginTop: 2 }}>Your hospital is not live on MediReach. Update details and contact the super admin for approval.</div>
+      </div>
+    </div>
+  ) : !verified ? (
     <div style={{ background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: 10, padding: '10px 18px', margin: '16px 32px 0', display: 'flex', alignItems: 'center', gap: 10 }}>
       <span style={{ fontSize: 18 }}>⏳</span>
       <div>
@@ -124,7 +152,7 @@ export default function Dashboard() {
   );
 
 
-  const noDocsBanner = !verified ? (
+  const noDocsBanner = !verified && hospital?.active !== false ? (
     <div style={{
       background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: 10,
       padding: '10px 18px', marginBottom: 8, display: 'flex',
@@ -197,6 +225,67 @@ export default function Dashboard() {
             </div>
 
             <div className="fu1 g2" style={{ gap: 20 }}>
+              <div className="card card-p" style={{ gridColumn: '1 / -1' }}>
+                <div style={{ fontFamily: 'var(--font-serif)', fontWeight: 700, fontSize: 20, color: 'var(--navy)', marginBottom: 4 }}>
+                  Booking Requests
+                </div>
+                <p className="c-dim f13 mb20">Accept or cancel patient booking requests and track their current status.</p>
+
+                {bookingsLoading && bookings.length === 0 ? (
+                  <div className="col" style={{ alignItems: 'center', gap: 10, padding: '24px 0', textAlign: 'center' }}>
+                    <p className="fw6 f14 c-dim">Loading booking requests…</p>
+                  </div>
+                ) : bookings.length === 0 ? (
+                  <div className="col" style={{ alignItems: 'center', gap: 10, padding: '24px 0', textAlign: 'center' }}>
+                    <p className="fw6 f14 c-dim">No booking requests yet</p>
+                  </div>
+                ) : (
+                  bookings.map((booking, index) => (
+                    <div key={booking.id} style={{ padding: '14px 0', borderBottom: index < bookings.length - 1 ? '1px solid var(--gray100)' : 'none', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16 }}>
+                      <div>
+                        <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--navy)' }}>
+                          {booking.patientName} · {booking.bedType} · #{booking.id}
+                        </div>
+                        <div style={{ fontSize: 12, color: '#64748B', marginTop: 4 }}>
+                          {booking.patientEmail} · {booking.patientPhone}
+                        </div>
+                        <div style={{ fontSize: 12, color: '#64748B', marginTop: 4 }}>
+                          Status: <b style={{ color: booking.status === 'PENDING' ? '#B45309' : booking.status === 'CONFIRMED' ? '#15803D' : booking.status === 'REJECTED' || booking.status === 'HOSPITAL_CANCELLED' ? '#B91C1C' : booking.status === 'CANCELLED' ? '#475569' : '#475569' }}>{bookingStatusLabel(booking.status)}</b>
+                        </div>
+                        {booking.reason && (
+                          <div style={{ fontSize: 12, color: '#64748B', marginTop: 4 }}>
+                            Reason: {booking.reason}
+                          </div>
+                        )}
+                      </div>
+                      <div className="row gap8" style={{ flexShrink: 0 }}>
+                        {booking.status === 'PENDING' && (
+                          <>
+                            <button className="btn btn-blue btn-sm" style={{ fontSize: 11, padding: '6px 12px' }} onClick={() => updateBookingStatus(booking.id, 'CONFIRMED')}>
+                              Accept
+                            </button>
+                            <button className="btn btn-sm" style={{ fontSize: 11, padding: '6px 12px', background: 'var(--red-lt)', color: 'var(--red)', border: '1px solid var(--red)' }} onClick={() => updateBookingStatus(booking.id, 'REJECTED')}>
+                              Cancel
+                            </button>
+                          </>
+                        )}
+                        {booking.status === 'CONFIRMED' && (
+                          <button className="btn btn-sm" style={{ fontSize: 11, padding: '6px 12px', background: 'var(--red-lt)', color: 'var(--red)', border: '1px solid var(--red)' }} onClick={() => updateBookingStatus(booking.id, 'REJECTED')}>
+                            Cancel Booking
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
+                {bookingsLoading && (
+                  <div style={{ marginTop: 10, fontSize: 12, color: '#64748B' }}>Refreshing booking requests…</div>
+                )}
+                {bookingsError && (
+                  <div style={{ marginTop: 10, fontSize: 12, color: '#B91C1C' }}>{bookingsError}</div>
+                )}
+              </div>
+
               {/* SOS Alerts */}
               {sosAlerts.length > 0 && (
                 <div className="card card-p mb20" style={{ borderLeft: '4px solid var(--red)', gridColumn: '1 / -1' }}>

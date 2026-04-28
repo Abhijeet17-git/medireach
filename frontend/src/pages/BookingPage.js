@@ -239,7 +239,7 @@ export default function BookingPage() {
         Login is required. Payment is optional, but demo OTP <b>1234</b> is required for every booking.
       </p>
 
-      <div style={{ display: "flex", gap: 8, marginBottom: 28 }}>
+      <div className="booking-tabs" style={{ marginBottom: 28 }}>
         {[["book", "Book a Bed"], ["mybookings", "My Bookings"]].map(([t, label]) => (
           <button key={t} onClick={() => setTab(t)} style={{
             padding: "8px 22px", borderRadius: 8, border: "none", cursor: "pointer",
@@ -250,7 +250,7 @@ export default function BookingPage() {
       </div>
 
       {tab === "book" && (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
+        <div className="booking-layout">
           <div>
             <h3 style={{ fontSize: 15, fontWeight: 600, color: "#334155", marginBottom: 12 }}>1. Select Hospital</h3>
             <div style={{ display: "flex", flexDirection: "column", gap: 10, maxHeight: 440, overflowY: "auto" }}>

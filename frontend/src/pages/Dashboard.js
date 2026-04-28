@@ -129,7 +129,7 @@ export default function Dashboard() {
   ];
 
   const verificationBanner = hospital?.active === false ? (
-    <div style={{ background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 10, padding: '10px 18px', margin: '16px 32px 0', display: 'flex', alignItems: 'center', gap: 10 }}>
+    <div style={{ background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 10, padding: '10px 18px', margin: '16px 0 0', display: 'flex', alignItems: 'center', gap: 10 }}>
       <span style={{ fontSize: 18 }}>❌</span>
       <div>
         <div style={{ fontWeight: 700, color: '#B91C1C', fontSize: 14 }}>Hospital Rejected</div>
@@ -137,7 +137,7 @@ export default function Dashboard() {
       </div>
     </div>
   ) : !verified ? (
-    <div style={{ background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: 10, padding: '10px 18px', margin: '16px 32px 0', display: 'flex', alignItems: 'center', gap: 10 }}>
+    <div style={{ background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: 10, padding: '10px 18px', margin: '16px 0 0', display: 'flex', alignItems: 'center', gap: 10 }}>
       <span style={{ fontSize: 18 }}>⏳</span>
       <div>
         <div style={{ fontWeight: 700, color: '#92400E', fontSize: 14 }}>Hospital Pending Verification</div>
@@ -145,7 +145,7 @@ export default function Dashboard() {
       </div>
     </div>
   ) : (
-    <div style={{ background: '#E8F5E9', border: '1.5px solid #2E7D32', borderRadius: 12, padding: '14px 20px', margin: '16px 32px 0', display: 'flex', alignItems: 'center', gap: 12 }}>
+    <div style={{ background: '#E8F5E9', border: '1.5px solid #2E7D32', borderRadius: 12, padding: '14px 20px', margin: '16px 0 0', display: 'flex', alignItems: 'center', gap: 12 }}>
       <span style={{ fontSize: 22 }}>✅</span>
       <div style={{ fontWeight: 700, color: '#1B5E20', fontSize: 15 }}>Hospital Verified — Live on MediReach</div>
     </div>

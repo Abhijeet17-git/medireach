@@ -77,8 +77,8 @@ export default function SuperAdminPage() {
   if (loading) return <div style={{ padding: 40, textAlign: 'center' }}>Loading...</div>;
 
   return (
-    <div style={{ minHeight: '100vh', background: '#F8FAFC', padding: '32px' }}>
-      <div style={{ maxWidth: 900, margin: '0 auto' }}>
+    <div className="admin-page">
+      <div className="admin-shell">
 
         {/* Header */}
         <div style={{ marginBottom: 28 }}>
@@ -91,7 +91,7 @@ export default function SuperAdminPage() {
           </div>
 
           {/* Stats */}
-          <div style={{ display: 'flex', gap: 16, marginTop: 20 }}>
+          <div className="admin-stats">
             {[
               { label: 'Pending', value: hospitals.filter(h => !h.verified).length, color: '#F59E0B', bg: '#FEF3C7' },
               { label: 'Verified', value: hospitals.filter(h => h.verified).length, color: '#10B981', bg: '#D1FAE5' },
@@ -107,7 +107,7 @@ export default function SuperAdminPage() {
         </div>
 
         {/* Tabs */}
-        <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
+        <div className="admin-tabs" style={{ marginBottom: 20 }}>
           {['pending', 'verified', 'rejected', 'admins', 'users'].map(t => (
             <button key={t} onClick={() => setTab(t)}
               style={{ padding: '8px 20px', borderRadius: 20, border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 13,
@@ -138,11 +138,11 @@ export default function SuperAdminPage() {
             )}
             {pending.map(h => (
               <div key={h.id} style={{ background: 'white', borderRadius: 12, padding: '20px 24px', boxShadow: '0 1px 4px rgba(0,0,0,0.08)', border: '1.5px solid #FEF3C7' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div className="admin-card-head">
                   <div>
                     <div style={{ fontWeight: 700, fontSize: 16, color: '#1E293B', marginBottom: 4 }}>{h.name}</div>
                     <div style={{ fontSize: 13, color: '#64748B', marginBottom: 8 }}>📍 {h.address}, {h.city}</div>
-                    <div style={{ display: 'flex', gap: 16, fontSize: 13, color: '#475569' }}>
+                    <div className="admin-card-meta">
                       <span>🛏️ ICU: {h.availableIcuBeds}/{h.totalIcuBeds}</span>
                       <span>🏥 General: {h.availableGeneralBeds}/{h.totalGeneralBeds}</span>
                       <span>📞 {h.phone}</span>
@@ -162,7 +162,7 @@ export default function SuperAdminPage() {
                       </div>
                     )}
                   </div>
-                  <div style={{ display: 'flex', gap: 8, marginLeft: 16, flexDirection: 'column', alignItems: 'flex-end' }}>
+                  <div className="admin-card-actions">
                     {h.driveLink ? (
                       <>
                         <button onClick={() => approve(h.id)}
@@ -197,19 +197,21 @@ export default function SuperAdminPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {verified.map(h => (
               <div key={h.id} style={{ background: 'white', borderRadius: 12, padding: '20px 24px', boxShadow: '0 1px 4px rgba(0,0,0,0.08)', border: '1.5px solid #D1FAE5' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div className="admin-card-head" style={{ alignItems: 'center' }}>
                   <div>
                     <div style={{ fontWeight: 700, fontSize: 16, color: '#1E293B', marginBottom: 4 }}>✅ {h.name}</div>
                     <div style={{ fontSize: 13, color: '#64748B' }}>📍 {h.address}, {h.city} · 📞 {h.phone}</div>
                   </div>
-                  <button onClick={() => reject(h.id)}
-                    style={{ padding: '8px 16px', borderRadius: 8, border: '1.5px solid #EF4444', background: 'white', color: '#EF4444', fontWeight: 600, cursor: 'pointer', fontSize: 13 }}>
-                    Revoke
-                  </button>
-                  <button onClick={() => deleteHospital(h.id, h.name)}
-                    style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: '#7F1D1D', color: 'white', fontWeight: 600, cursor: 'pointer', fontSize: 13, marginLeft: 8 }}>
-                    Delete Hospital
-                  </button>
+                  <div className="admin-card-actions" style={{ flexDirection: 'row', marginLeft: 0 }}>
+                    <button onClick={() => reject(h.id)}
+                      style={{ padding: '8px 16px', borderRadius: 8, border: '1.5px solid #EF4444', background: 'white', color: '#EF4444', fontWeight: 600, cursor: 'pointer', fontSize: 13 }}>
+                      Revoke
+                    </button>
+                    <button onClick={() => deleteHospital(h.id, h.name)}
+                      style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: '#7F1D1D', color: 'white', fontWeight: 600, cursor: 'pointer', fontSize: 13 }}>
+                      Delete Hospital
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
@@ -225,7 +227,7 @@ export default function SuperAdminPage() {
             )}
             {rejected.map(h => (
               <div key={h.id} style={{ background: 'white', borderRadius: 12, padding: '20px 24px', boxShadow: '0 1px 4px rgba(0,0,0,0.08)', border: '1.5px solid #FECACA' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div className="admin-card-head" style={{ alignItems: 'center' }}>
                   <div>
                     <div style={{ fontWeight: 700, fontSize: 16, color: '#1E293B', marginBottom: 4 }}>❌ {h.name}</div>
                     <div style={{ fontSize: 13, color: '#64748B' }}>📍 {h.address}, {h.city} · 📞 {h.phone}</div>
@@ -241,7 +243,7 @@ export default function SuperAdminPage() {
         )}
 
         {tab === 'admins' && (
-          <div style={{ background: 'white', borderRadius: 12, overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,0,0,0.08)' }}>
+          <div className="table-scroll" style={{ background: 'white', borderRadius: 12, overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,0,0,0.08)' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ background: '#F8FAFC', borderBottom: '1.5px solid #E2E8F0' }}>
@@ -271,7 +273,7 @@ export default function SuperAdminPage() {
 
         {/* Users */}
         {tab === 'users' && (
-          <div style={{ background: 'white', borderRadius: 12, overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,0,0,0.08)' }}>
+          <div className="table-scroll" style={{ background: 'white', borderRadius: 12, overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,0,0,0.08)' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ background: '#F8FAFC', borderBottom: '1.5px solid #E2E8F0' }}>

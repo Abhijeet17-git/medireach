@@ -330,7 +330,7 @@ export default function HospitalFinder() {
               <h1 className="fu">Find Hospitals</h1>
               <p className="fu1 c-dim f13 mt4">Click any card to see live map + ambulance options</p>
             </div>
-            <div className="fu2 row gap20">
+            <div className="fu2 row gap20 wrap-f">
               {[
                 { val: hospitals.length, label: 'Hospitals', color: 'var(--navy)' },
                 { val: hospitals.reduce((s, h) => s + (h.availableIcuBeds || 0), 0), label: 'ICU Beds', color: 'var(--green)' },

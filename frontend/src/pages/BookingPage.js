@@ -15,13 +15,26 @@ export default function BookingPage() {
 
   const user = JSON.parse(localStorage.getItem("user") || "{}");
 
+  const fetchHospitals = () => {
+    fetch(`${API}/api/hospitals/all`)
+      .then(r => r.json())
+      .then(data => {
+        setHospitals(data);
+        setSelected(current => current
+          ? data.find(h => h.hospitalId === current.hospitalId) || current
+          : current
+        );
+      })
+      .catch(() => {});
+  };
+
   const fetchMyBookings = (email) => {
     fetch(`${API}/api/bookings/my?email=${encodeURIComponent(email)}`)
       .then(r => r.json()).then(setMyBookings).catch(() => {});
   };
 
   useEffect(() => {
-    fetch(`${API}/api/hospitals/all`).then(r => r.json()).then(setHospitals).catch(() => {});
+    fetchHospitals();
     if (user.email) {
       setForm(f => ({ ...f, patientEmail: user.email, patientName: user.name || "" }));
       fetchMyBookings(user.email);
@@ -44,6 +57,7 @@ export default function BookingPage() {
       if (!res.ok) throw new Error(data);
       setResult(data);
       fetchMyBookings(form.patientEmail);
+      fetchHospitals();
     } catch (e) {
       setError(e.message || "Booking failed");
     } finally {
@@ -58,6 +72,7 @@ export default function BookingPage() {
       const data = await res.json();
       alert(data.message);
       fetchMyBookings(form.patientEmail || user.email);
+      fetchHospitals();
     } catch { alert("Cancel failed"); }
   };
 
